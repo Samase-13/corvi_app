@@ -37,3 +37,16 @@ class CartError extends CartState {
   @override
   List<Object?> get props => [mensaje];
 }
+
+// CartState.dart
+class ShippingCalculated extends CartState {
+  final double shippingCost;
+
+  ShippingCalculated(this.shippingCost);
+}
+
+class ShippingTracked extends CartState {
+  final String status;
+
+  ShippingTracked(this.status);
+}

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:corvi_app/src/data/dataSource/remote/services/ShippingService.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'CartEvent.dart';
@@ -6,11 +7,15 @@ import 'CartState.dart';
 import 'package:corvi_app/src/domain/models/Repuestos.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
+  final ShippingService shippingService = ShippingService();
+
   CartBloc() : super(CartInitial()) {
     on<LoadCart>(_onLoadCart);
     on<AddProductToCart>(_onAddProductToCart);
     on<RemoveProductFromCart>(_onRemoveProductFromCart);
     on<UpdateProductQuantity>(_onUpdateProductQuantity);
+    on<CalculateShipping>(_onCalculateShipping);
+    on<TrackShipping>(_onTrackShipping);
     add(LoadCart()); // Disparar el evento para cargar el carrito al iniciar
   }
 
@@ -106,4 +111,27 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     await prefs.setString('cartProducts', productosJson);
     await prefs.setString('cartQuantities', cantidadesJson);
   }
+  Future<void> _onCalculateShipping(
+    CalculateShipping event, Emitter<CartState> emit) async {
+  try {
+    if (state is CartLoaded) {
+      List<Repuesto> products = (state as CartLoaded).productos;
+      double shippingCost = await shippingService.calculateShippingCost(products);
+
+      emit(ShippingCalculated(shippingCost));
+    }
+  } catch (e) {
+    emit(CartError('Error al calcular el envío')); // Usar CartError en lugar de ErrorState
+  }
+}
+
+Future<void> _onTrackShipping(
+    TrackShipping event, Emitter<CartState> emit) async {
+  try {
+    String status = await shippingService.trackShipping(event.trackingNumber);
+    emit(ShippingTracked(status));
+  } catch (e) {
+    emit(CartError('Error al rastrear el envío')); // Usar CartError en lugar de ErrorState
+  }
+ }
 }

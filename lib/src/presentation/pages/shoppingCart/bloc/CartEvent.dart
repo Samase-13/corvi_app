@@ -37,4 +37,19 @@ class UpdateProductQuantity extends CartEvent {
   List<Object?> get props => [producto, cantidad];
 }
 
+// CartEvent.dart
+class CalculateShipping extends CartEvent {
+  final String address;
+  final String city;
+  final String postalCode;
+
+  CalculateShipping(this.address, this.city, this.postalCode);
+}
+
+class TrackShipping extends CartEvent {
+  final String trackingNumber;
+
+  TrackShipping(this.trackingNumber);
+}
+
 class LoadCart extends CartEvent {}

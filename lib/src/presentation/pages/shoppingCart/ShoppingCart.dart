@@ -1,10 +1,17 @@
+import 'package:corvi_app/src/presentation/pages/envio/ShippingFormPage.dart';
+import 'package:corvi_app/src/presentation/pages/rastreo/TrackShippingPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:corvi_app/src/domain/models/Repuestos.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartBloc.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartState.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartEvent.dart';
+import 'package:provider/provider.dart';
+import 'package:corvi_app/src/data/api/ApiConfig.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
+// Agrega el OrderProvider en tu proyecto
 class ShoppingCart extends StatelessWidget {
   const ShoppingCart({super.key});
 
@@ -49,14 +56,37 @@ class ShoppingCart extends StatelessWidget {
             Divider(thickness: 1, color: Colors.grey[300]),
             _buildSummarySection(context),
             const SizedBox(height: 10),
-            _buildPayButton(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ShippingFormPage()),
+                    );
+                  },
+                  child: const Text('Calcular Envío'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => TrackShippingPage()),
+                    );
+                  },
+                  child: const Text('Rastrear Envío'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _buildSendButton(context), // Botón para enviar el pedido
           ],
         ),
       ),
     );
   }
 
-  // Widget para construir cada producto en el carrito
   Widget _buildCartItem(Repuesto producto, int cantidad, BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -177,7 +207,6 @@ class ShoppingCart extends StatelessWidget {
     );
   }
 
-  // Widget para construir cada fila en el resumen (Subtotal, Envío, Total)
   Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -205,27 +234,60 @@ class ShoppingCart extends StatelessWidget {
     );
   }
 
-  // Widget para construir el botón de pagar
-  Widget _buildPayButton() {
-    return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          // Lógica para proceder al pago
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.grey,
-          padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
+  // Botón de Enviar Pedido
+  Widget _buildSendButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () async {
+        // Dirección de ejemplo, puedes obtenerla de un formulario de dirección
+        String address = "123 Calle Principal, Ciudad, País";
+        List<Map<String, dynamic>> products = [
+          {"id": 1, "quantity": 2},
+          {"id": 2, "quantity": 1},
+        ]; // Reemplaza con los datos del carrito
+
+        final url = Uri.http(ApiConfig.API, '/shipping/send');
+        final response = await http.post(
+          url,
+          headers: {
+            'Authorization': ApiConfig.AUTH_TOKEN,
+            'Content-Type': 'application/json',
+          },
+          body: json.encode({
+            "address": address,
+            "products": products,
+          }),
+        );
+
+        if (response.statusCode == 201) {
+          final data = json.decode(response.body);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Pedido enviado correctamente. ID: ${data['order_id']}'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al enviar el pedido. Inténtalo de nuevo.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
         ),
-        child: const Text(
-          'Pagar',
-          style: TextStyle(
-            fontFamily: 'Oswald',
-            fontSize: 18,
-            color: Colors.white,
-          ),
+      ),
+      child: const Text(
+        'Enviar Pedido',
+        style: TextStyle(
+          fontFamily: 'Oswald',
+          fontSize: 18,
+          color: Colors.white,
         ),
       ),
     );
