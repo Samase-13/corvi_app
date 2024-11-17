@@ -7,7 +7,7 @@ import 'package:corvi_app/src/data/api/ApiConfig.dart';
 import 'package:corvi_app/src/domain/models/Repuestos.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartBloc.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartState.dart';
-import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartEvent.dart';
+
 
 class ShoppingCart extends StatelessWidget {
   const ShoppingCart({super.key});
