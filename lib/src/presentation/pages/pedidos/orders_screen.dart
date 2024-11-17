@@ -63,15 +63,66 @@ class OrdersScreen extends StatelessWidget {
                       const SizedBox(height: 5),
                       Text("Fecha: ${order["fecha_creacion"]}"),
                       const SizedBox(height: 10),
-                      const Text("Productos:", style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text(
+                        "Productos:",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       ...productos.map((producto) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 5),
-                          child: Text("- ${producto["title"]} x${producto["quantity"]}"),
+                          child: Row(
+                            children: [
+                              Image.network(
+                                producto["imagen"] ?? "", // URL de la imagen
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "${producto["title"]} x${producto["quantity"]}",
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       }).toList(),
                       const SizedBox(height: 10),
-                      Text("Total: S/. ${order["total"]}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Total: S/. ${order["total"]}",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                'tracking',
+                                arguments: order["codigo_rastreo"],
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Text(
+                              "Rastrear",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
