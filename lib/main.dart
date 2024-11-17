@@ -3,6 +3,7 @@ import 'package:corvi_app/src/presentation/pages/loading/LoadingScreenPage.dart'
 import 'package:corvi_app/src/presentation/pages/machineryDetail/MachineryDetailsPage.dart';
 import 'package:corvi_app/src/presentation/pages/machineryRental/MachineryRental.dart';
 import 'package:corvi_app/src/presentation/pages/parts/PartsPage.dart';
+import 'package:corvi_app/src/presentation/pages/pedidos/orders_screen.dart';
 import 'package:corvi_app/src/presentation/pages/rentalCart/RentalCartPage.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/ShoppingCart.dart';
 import 'package:corvi_app/src/presentation/pages/spareParts/SparePartsPage.dart';
@@ -47,6 +48,7 @@ class MyApp extends StatelessWidget {
           'descriptionMachinery': (BuildContext context) =>
               MachineryDetailsPage(),
           'rentalCart': (BuildContext context) => RentalCartPage(),
+          'orders': (BuildContext context) => OrdersScreen(userId: 1),
         },
       ),
     );
