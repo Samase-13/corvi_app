@@ -7,23 +7,31 @@ import 'package:corvi_app/src/data/api/ApiConfig.dart';
 import 'package:corvi_app/src/domain/models/Repuestos.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartBloc.dart';
 import 'package:corvi_app/src/presentation/pages/shoppingCart/bloc/CartState.dart';
-
+import 'package:corvi_app/src/presentation/pages/envio/bloc/shipping_bloc.dart';
 
 class ShoppingCart extends StatelessWidget {
   const ShoppingCart({super.key});
 
-  Future<void> _startPayment(BuildContext context, List<Repuesto> productos, double total) async {
+  Future<void> _startPayment(
+      BuildContext context, List<Repuesto> productos, double total) async {
     try {
-      // Construir el cuerpo para la solicitud al backend
+      final shippingState = context.read<ShippingBloc>().state;
+
+      if (shippingState is! ShippingAddressSet) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Por favor, selecciona un lugar de envío.')),
+        );
+        return;
+      }
+
       List<Map<String, dynamic>> productosPayload = productos
           .map((producto) => {
                 "title": producto.nombre,
-                "quantity": 1, // Puedes personalizar esta cantidad si tienes un contador
+                "quantity": 1,
                 "unit_price": producto.precio,
               })
           .toList();
 
-      // Realizar la solicitud al backend para obtener el enlace de pago
       final response = await http.post(
         Uri.http(ApiConfig.API, "/mercado_pago/pago"),
         headers: {
@@ -31,17 +39,15 @@ class ShoppingCart extends StatelessWidget {
           "Authorization": ApiConfig.AUTH_TOKEN,
         },
         body: jsonEncode({
-          "id_usuario": 1, // Asume que el usuario ya está autenticado y tiene un ID 1
+          "id_usuario": 1,
           "productos": productosPayload,
-          "destino": "Calle Principal 123, Lima, Perú", // Dirección de envío
+          "destino": (shippingState as ShippingAddressSet).destino,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final paymentUrl = data['payment_url'];
-
-        // Abre la URL del pago en el navegador
         await launchUrl(paymentUrl, context);
       } else {
         throw Exception("Error al generar el enlace de pago: ${response.body}");
@@ -76,13 +82,38 @@ class ShoppingCart extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          'Carrito de Compras',
-          style: TextStyle(
-            fontFamily: 'Oswald',
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-          ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Carrito de Compras',
+              style: TextStyle(
+                fontFamily: 'Oswald',
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, 'shipping');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: const Text(
+                'Lugar de Envío',
+                style: TextStyle(
+                  fontFamily: 'Oswald',
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       body: Padding(
@@ -110,7 +141,7 @@ class ShoppingCart extends StatelessWidget {
             Divider(thickness: 1, color: Colors.grey[300]),
             _buildSummarySection(context),
             const SizedBox(height: 20),
-            _buildPayButton(context),
+            _buildButtons(context),
           ],
         ),
       ),
@@ -170,15 +201,18 @@ class ShoppingCart extends StatelessWidget {
 
         if (state is CartLoaded) {
           subtotal = state.productos.fold(
-              0, (sum, producto) => sum + producto.precio); // Suma de precios
+              0, (sum, producto) => sum + producto.precio);
         }
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             children: [
-              _buildSummaryRow('Total:', 'S/. ${subtotal.toStringAsFixed(2)}',
-                  isTotal: true),
+              _buildSummaryRow(
+                'Total:',
+                'S/. ${subtotal.toStringAsFixed(2)}',
+                isTotal: true,
+              ),
             ],
           ),
         );
@@ -213,61 +247,60 @@ class ShoppingCart extends StatelessWidget {
     );
   }
 
-  Widget _buildPayButton(BuildContext context) {
-  return BlocBuilder<CartBloc, CartState>(
-    builder: (context, state) {
-      if (state is CartLoaded && state.productos.isNotEmpty) {
-        double total = state.productos.fold(
-            0, (sum, producto) => sum + producto.precio); // Suma total
+  Widget _buildButtons(BuildContext context) {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        if (state is CartLoaded && state.productos.isNotEmpty) {
+          double total = state.productos.fold(
+              0, (sum, producto) => sum + producto.precio);
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ElevatedButton(
-              onPressed: () => _startPayment(context, state.productos, total),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () => _startPayment(context, state.productos, total),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text(
+                  'Pagar',
+                  style: TextStyle(
+                    fontFamily: 'Oswald',
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              child: const Text(
-                'Pagar',
-                style: TextStyle(
-                  fontFamily: 'Oswald',
-                  fontSize: 18,
-                  color: Colors.white,
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, 'orders');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text(
+                  'Mis Pedidos',
+                  style: TextStyle(
+                    fontFamily: 'Oswald',
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, 'orders'); // Navegar a la página de pedidos
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: const Text(
-                'Mis Pedidos',
-                style: TextStyle(
-                  fontFamily: 'Oswald',
-                  fontSize: 18,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        );
-      } else {
-        return const SizedBox.shrink();
-      }
-    },
-  );
-}
-
+            ],
+          );
+        } else {
+          return const SizedBox.shrink();
+        }
+      },
+    );
+  }
 }

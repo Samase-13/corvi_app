@@ -29,7 +29,7 @@ class OrdersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mis Pedidos"),
+        title: const Text("Corvi Pedidos"),
       ),
       body: FutureBuilder<List<dynamic>>(
         future: _fetchOrders(),

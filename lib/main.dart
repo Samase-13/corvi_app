@@ -1,4 +1,5 @@
 import 'package:corvi_app/src/presentation/pages/descriptionParts/DescriptionPartsPage.dart';
+import 'package:corvi_app/src/presentation/pages/envio/ShippingPage.dart';
 import 'package:corvi_app/src/presentation/pages/loading/LoadingScreenPage.dart';
 import 'package:corvi_app/src/presentation/pages/machineryDetail/MachineryDetailsPage.dart';
 import 'package:corvi_app/src/presentation/pages/machineryRental/MachineryRental.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:corvi_app/injection.dart'; // Inyección de dependencias
 import 'package:corvi_app/src/presentation/pages/blocProviders.dart'; // BlocProviders
+import 'package:corvi_app/src/presentation/pages/envio/bloc/shipping_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +29,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: blocProviders, // Proveer los BLoCs
+      providers: [
+        ...blocProviders, // Proveer los BLoCs existentes
+        BlocProvider(create: (_) => ShippingBloc()), // Proveer ShippingBloc
+      ],
       child: MaterialApp(
         builder: FToastBuilder(), // Para mostrar toasts si es necesario
         debugShowCheckedModeBanner: false,
@@ -39,20 +44,28 @@ class MyApp extends StatelessWidget {
         initialRoute: 'loading', // Ruta inicial
         routes: {
           'loading': (BuildContext context) => LoadingScreenPage(),
-          'main': (BuildContext context) =>
-              const MainNavigationPage(), // Ruta para la página principal
+          'main': (BuildContext context) => const MainNavigationPage(), // Página principal
           'spareParts': (BuildContext context) => SparePartsPage(),
           'descriptionParts': (BuildContext context) => DescriptionPartsPage(),
           'shoppingCart': (BuildContext context) => ShoppingCart(),
           'parts': (BuildContext context) => PartsPage(),
           'machinaryRental': (BuildContext context) => MachineryRentalPage(),
-          'descriptionMachinery': (BuildContext context) =>
-              MachineryDetailsPage(),
+          'descriptionMachinery': (BuildContext context) => MachineryDetailsPage(),
           'rentalCart': (BuildContext context) => RentalCartPage(),
+          'shipping': (BuildContext context) => ShippingPage(
+  onAddressSaved: (destino, codigoRastreo) {
+    // Aquí se maneja la dirección guardada
+    context.read<ShippingBloc>().add(
+          SaveShippingAddressEvent(destino: destino),
+        );
+  },
+),
+
+              
           'orders': (BuildContext context) => OrdersScreen(userId: 1),
           'tracking': (BuildContext context) => TrackingScreen(
-        codigoRastreo: ModalRoute.of(context)!.settings.arguments as String,
-         ),
+                codigoRastreo: ModalRoute.of(context)!.settings.arguments as String,
+              ),
         },
       ),
     );
